@@ -1,25 +1,18 @@
 # Catálogo Alento Das Torcidas
 
-Abra com dois cliques. Não precisa instalar nada.
+Site público do catálogo de camisas. É só leitura: o cliente vê as camisas, os tamanhos e os preços, e pede pelo WhatsApp.
 
-- **index.html**: o catálogo que o cliente vê. Tem as abas Por Times, Por Tamanho, Todos os Modelos e Medidas, além da busca e do botão "Pedir pelo WhatsApp".
-- **admin.html**: onde você marca o estoque e os preços.
-
-## Como atualizar o estoque
-1. Abra o `admin.html`.
-2. Preencha WhatsApp, Instagram e a **margem %**, que é somada ao preço base do fornecedor.
-3. Procure a camisa e digite a quantidade em cada tamanho. Se quiser um preço diferente para uma camisa, preencha "Preço de venda".
-   - "+1 em tudo" coloca 1 peça em cada tamanho; "Zerar" tira a camisa do catálogo.
-   - O filtro "Só o que tenho" mostra o que já está marcado.
-4. Tudo fica salvo como **rascunho neste navegador**. O `index.html` deste computador já mostra o rascunho.
-5. Para publicar ou levar para outro computador, clique em **Baixar estoque.js** e substitua o `estoque.js` desta pasta.
-
-Só aparecem no catálogo as camisas com pelo menos 1 peça em algum tamanho.
+## Onde se mexe no estoque e nos preços
+No **ALENTO PEDIDOS**, menu **Produtos** (tela "Produtos · Catálogo"), com o seu login. Só ADMIN e GERENTE têm acesso.
+- Digite a quantidade em cada tamanho. Cada camisa é salva sozinha, cerca de 1 segundo depois da última alteração.
+- **Margem %** soma em cima do preço do fornecedor. "Preço próprio" vale só para aquela camisa.
+- O site mostra apenas as camisas com pelo menos 1 peça e atualiza em até 5 minutos.
+- Os dados ficam na aba **CATALOGO_ESTOQUE** da planilha do ALENTO PEDIDOS.
 
 ## Arquivos
-- `produtos-base.js`: 2.319 produtos do fornecedor (nome, preço base, foto, categorias).
-- `imagens/`: fotos das camisas.
-- `estoque.js`: o que você tem, quantidades e preços (gerado pelo admin).
-- `comum.js`: tamanhos e a lista de times por seção (Mundo FIFA, Brasileirão…). Para incluir um time, acrescente uma linha na seção certa.
-- `styles.css`: cores no topo (`--azul` é o azul do PDF).
-- `logo.jpg`: escudo tirado do PDF da loja.
+- `config.js`: endereço do ALENTO PEDIDOS (Apps Script) de onde o site lê o estoque.
+- `produtos-base.js`: as 2.319 camisas do fornecedor (nome, preço base, foto, categorias).
+- `imagens/`: fotos comprimidas. Os originais estão em Downloads/SITE TESTE.
+- `comum.js`: tamanhos e a lista de times por seção. Para incluir um time, acrescente uma linha na seção certa.
+- `styles.css`: cores no topo (`--azul`).
+- `estoque.js`: reserva usada só se a planilha estiver fora do ar (hoje vazia).
