@@ -29,5 +29,5 @@ No **ALENTO PEDIDOS**, menu **Produtos** (tela "Produtos · Catálogo"), com o s
 ## Camisas do CatálogoPro (catalogopro.app)
 - O site também mostra, ao vivo, as camisas ativas do CatálogoPro. Cadastrou lá, aparece aqui; arquivou lá, some daqui. Não precisa mexer em arquivo nem enviar ao GitHub.
 - Os tamanhos são os marcados no CatálogoPro. Ele não tem quantidade, então o site mostra só "disponível".
-- O CatálogoPro não tem preço. O preço por tipo (Camisas, Kits, Todos) fica em `config.js`, em `CATALOGOPRO.precos`. Com `null` aparece "Consulte".
+- **Preço:** o site lê o campo `preco` de cada camisa no CatálogoPro (também aceita `price`, `valor` ou `preco_venda`). Camisa com o campo vazio usa o preço padrão do tipo (Camisas, Kits, Todos), que fica em `config.js`, em `CATALOGOPRO.precos`. Com `null` aparece "Consulte". Esse preço é o valor final: não soma a margem do ALENTO PEDIDOS.
 - Se o CatálogoPro sair do ar, o site abre normalmente só com as camisas do fornecedor.

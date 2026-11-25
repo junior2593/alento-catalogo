@@ -160,7 +160,19 @@
       return fetch(api + entidade + "?limit=5000" + (extra || ""), { headers: { "X-App-Id": cfg.app } })
         .then(function (r) { if (!r.ok) throw new Error(entidade + " " + r.status); return r.json(); });
     };
-    var campos = "name,team_id,photos,shopify_photo_urls,sizes,category,is_kids_kit,is_archived,shopify_archived,is_sample";
+    // Preço da camisa: o primeiro destes campos que existir no CatálogoPro. Vazio = preço padrão do tipo (config.js).
+    var CAMPOS_PRECO = ["preco", "price", "valor", "preco_venda"];
+    var campos = "name,team_id,photos,shopify_photo_urls,sizes,category,is_kids_kit,is_archived,shopify_archived,is_sample," + CAMPOS_PRECO.join(",");
+    var lerPreco = function (m) {
+      for (var i = 0; i < CAMPOS_PRECO.length; i++) {
+        var v = m[CAMPOS_PRECO[i]];
+        if (v == null || v === "") continue;
+        if (typeof v === "string") v = v.replace(/[^\d,.]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".");
+        v = Number(v);
+        if (v > 0) return v;
+      }
+      return null;
+    };
     return Promise.all([
       ler("Model", "&q=" + encodeURIComponent(JSON.stringify({ is_archived: false })) + "&fields=" + encodeURIComponent(campos)),
       ler("Team"), ler("Country")
@@ -182,7 +194,8 @@
         if (/^(short|cal[cç][aã]o)/i.test(nome)) cats.push("shorts");
         else if (!infantil && (m.category === "Kits" || /^conjunto/i.test(nome))) cats.push("kits");
         var fotos = (m.photos && m.photos.length ? m.photos : m.shopify_photo_urls || []).filter(Boolean);
-        var preco = precos[m.category];
+        var preco = lerPreco(m);
+        if (preco == null) preco = precos[m.category];
         return montar({
           idBase: "cp " + nome, nome: nome, preco: preco == null || preco === "" ? null : preco,
           img: fotos[0] || "logo.jpg", fotos: fotos, cats: cats, disp: disp, infantil: infantil,

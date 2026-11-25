@@ -42,12 +42,18 @@ function iniciar(dados) {
     return itens.filter(function (p) { return C.norm(p.nome + " " + (p.time || "")).indexOf(q) >= 0; });
   }
 
+  function precoHtml(p, cls) {
+    var v = C.precoFinal(p, est);
+    return '<span class="' + cls + (v == null ? " consulte" : "") + '">' + C.brl(v) + '</span>';
+  }
   function card(p) {
     var tams = C.tamanhosEmEstoque(p, est).map(function (t) { return "<span>" + C.esc(t) + "</span>"; }).join("");
     return '<button class="card" data-id="' + p.id + '">' +
-      '<div class="foto"><img loading="lazy" src="' + C.esc(p.img) + '" alt=""></div>' +
-      '<div class="info"><div class="nome">' + C.esc(p.nome) + '</div><div class="mini">' + tams + '</div>' +
-      '<div class="preco">' + C.brl(C.precoFinal(p, est)) + '</div></div></button>';
+      '<div class="foto"><img loading="lazy" src="' + C.esc(p.img) + '" alt="">' +
+      (p.fotos.length > 1 ? '<span class="n-fotos">' + p.fotos.length + ' fotos</span>' : "") + '</div>' +
+      '<div class="info">' + (p.time && p.time !== "Outros" ? '<small class="card-time it">' + C.esc(p.time) + '</small>' : "") +
+      '<div class="nome">' + C.esc(p.nome) + '</div><div class="mini">' + tams + '</div>' +
+      '<div class="rodape">' + precoHtml(p, "preco") + '<span class="ver it" aria-hidden="true">Ver ›</span></div></div></button>';
   }
   function grade(itens, titulo) {
     var html = '<div class="lista-tit"><h2 class="it">' + C.esc(titulo) + '</h2><span>' + itens.length + ' modelo' + (itens.length === 1 ? "" : "s") + '</span></div>';
@@ -154,30 +160,56 @@ function iniciar(dados) {
     main.innerHTML = html;
   }
 
+  // Detalhe da camisa: galeria (setas, miniaturas, deslizar) e escolha do tamanho para o WhatsApp
+  var aberto = null;
+  var ICONE_ZAP = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-13.4 7.9L3 21l1.2-4.4A9 9 0 1 1 21 12z"/><path d="M8.5 8.5c.3 2.9 2.6 5.6 6 7l1.3-1.5-2-1-1 .8c-1-.5-2-1.5-2.5-2.5l.8-1-1-2z" fill="currentColor" stroke="none"/></svg>';
   function abrir(id) {
     var p = C.produtos.find(function (x) { return x.id === id; });
     if (!p) return;
+    aberto = { p: p, foto: 0, tam: null };
+    var n = p.fotos.length;
     var tams = C.tamanhosEmEstoque(p, est).map(function (t) {
-      return '<div><b>' + C.esc(t) + '</b><small>' + (p.disp ? "disponível" : C.qtd(p, est, t) + " un.") + '</small></div>';
+      return '<button class="tam" data-pedido-tam="' + C.esc(t) + '" aria-pressed="false"><b>' + C.esc(t) + '</b>' +
+        (p.disp ? "" : '<small>' + C.qtd(p, est, t) + ' un.</small>') + '</button>';
     }).join("");
-    var preco = C.precoFinal(p, est);
-    var zap = "";
-    if (numero) {
-      var msg = "Olá! Tenho interesse na camisa " + p.nome + (preco == null ? "" : " (" + C.brl(preco) + ")") + ". Tamanho: ";
-      zap = '<a class="zap it" target="_blank" rel="noopener" href="https://wa.me/' + numero + '?text=' + encodeURIComponent(msg) + '">Pedir pelo WhatsApp</a>';
-    }
+    var zap = numero ? '<a class="zap it" id="zap" target="_blank" rel="noopener" href="#">' + ICONE_ZAP + 'Pedir pelo WhatsApp</a>' : "";
     $("modal-box").innerHTML = '<button class="fechar" data-fechar aria-label="Fechar">×</button>' +
-      '<div class="foto"><img id="foto-grande" src="' + C.esc(p.img) + '" alt="' + C.esc(p.nome) + '">' +
-      (p.fotos.length > 1 ? '<div class="miniaturas">' + p.fotos.map(function (f, i) {
-        return '<button data-foto="' + C.esc(f) + '" aria-label="Foto ' + (i + 1) + '"' + (i ? "" : ' aria-pressed="true"') + '><img loading="lazy" src="' + C.esc(f) + '" alt=""></button>';
+      '<div class="galeria"><div class="palco"><img id="foto-grande" src="' + C.esc(p.fotos[0]) + '" alt="' + C.esc(p.nome) + '">' +
+      (n > 1 ? '<button class="seta ant" data-seta="-1" aria-label="Foto anterior">‹</button>' +
+        '<button class="seta prox" data-seta="1" aria-label="Próxima foto">›</button>' +
+        '<span class="contador" id="contador">1 / ' + n + '</span>' : "") + '</div>' +
+      (n > 1 ? '<div class="miniaturas">' + p.fotos.map(function (f, i) {
+        return '<button data-foto="' + i + '" aria-label="Foto ' + (i + 1) + '" aria-pressed="' + (i === 0) + '"><img loading="lazy" src="' + C.esc(f) + '" alt=""></button>';
       }).join("") + '</div>' : "") + '</div>' +
-      '<div class="det"><small class="it">' + C.esc(p.time || "") + '</small><h3>' + C.esc(p.nome) + '</h3>' +
-      '<div class="preco">' + C.brl(C.precoFinal(p, est)) + '</div>' +
-      '<div class="it" style="font-size:18px">Tamanhos disponíveis</div><div class="tams">' + tams + '</div>' + zap + '</div>';
+      '<div class="det">' + (p.time && p.time !== "Outros" ? '<small class="det-time it">' + C.esc(p.time) + '</small>' : "") +
+      '<h3>' + C.esc(p.nome) + '</h3>' + precoHtml(p, "preco") +
+      '<div class="det-tit it">Escolha o tamanho</div><div class="tams">' + tams + '</div>' +
+      '<a class="link-medidas" href="?tab=medidas" data-ir-medidas>Ver tabela de medidas</a>' + zap + '</div>';
+    atualizarZap();
     $("modal").classList.add("aberto");
+    document.body.classList.add("travado");
+    $("modal-box").scrollTop = 0;
     $("modal-box").querySelector(".fechar").focus();
   }
-  function fechar() { $("modal").classList.remove("aberto"); }
+  function irFoto(i) {
+    var p = aberto.p, n = p.fotos.length;
+    aberto.foto = (i + n) % n;
+    $("foto-grande").src = p.fotos[aberto.foto];
+    if ($("contador")) $("contador").textContent = (aberto.foto + 1) + " / " + n;
+    $("modal-box").querySelectorAll("[data-foto]").forEach(function (b) {
+      var sel = Number(b.dataset.foto) === aberto.foto;
+      b.setAttribute("aria-pressed", sel);
+      if (sel) b.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
+  }
+  function atualizarZap() {
+    var a = $("zap");
+    if (!a) return;
+    var p = aberto.p, preco = C.precoFinal(p, est);
+    var msg = "Olá! Tenho interesse na camisa " + p.nome + (preco == null ? "" : " (" + C.brl(preco) + ")") + ". Tamanho: " + (aberto.tam || "");
+    a.href = "https://wa.me/" + numero + "?text=" + encodeURIComponent(msg);
+  }
+  function fechar() { $("modal").classList.remove("aberto"); document.body.classList.remove("travado"); aberto = null; }
 
   document.addEventListener("click", function (e) {
     var t = e.target.closest("button, .modal");
@@ -191,9 +223,12 @@ function iniciar(dados) {
     else if (t.hasAttribute("data-voltar")) { estado.time = estado.cat = null; }
     else if (t.hasAttribute("data-mais")) { estado.limite += POR_PAGINA; render(); return; }
     else if (d.id) { abrir(d.id); return; }
-    else if (d.foto) {
-      $("foto-grande").src = d.foto;
-      t.parentNode.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b === t); });
+    else if (d.foto && aberto) { irFoto(Number(d.foto)); return; }
+    else if (d.seta && aberto) { irFoto(aberto.foto + Number(d.seta)); return; }
+    else if (d.pedidoTam && aberto) {
+      aberto.tam = aberto.tam === d.pedidoTam ? null : d.pedidoTam;
+      $("modal-box").querySelectorAll("[data-pedido-tam]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.pedidoTam === aberto.tam); });
+      atualizarZap();
       return;
     }
     else if (t.hasAttribute("data-fechar") || (t.id === "modal" && e.target === t)) { fechar(); return; }
@@ -201,7 +236,31 @@ function iniciar(dados) {
     render();
     if (d.time || d.cat || t.hasAttribute("data-voltar")) main.scrollIntoView({ block: "start" });
   });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") fechar(); });
+  document.addEventListener("keydown", function (e) {
+    if (!aberto) return;
+    if (e.key === "Escape") fechar();
+    else if (e.key === "ArrowLeft" && aberto.p.fotos.length > 1) irFoto(aberto.foto - 1);
+    else if (e.key === "ArrowRight" && aberto.p.fotos.length > 1) irFoto(aberto.foto + 1);
+  });
+  // "Ver tabela de medidas" dentro do detalhe: fecha e vai para a aba Medidas
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("[data-ir-medidas]")) return;
+    e.preventDefault();
+    fechar();
+    estado.aba = "medidas"; estado.time = estado.cat = null;
+    history.replaceState(null, "", "?tab=medidas");
+    render();
+    main.scrollIntoView({ block: "start" });
+  });
+  // Deslizar o dedo na foto troca de foto
+  var toqueX = null;
+  document.addEventListener("touchstart", function (e) { toqueX = e.target.closest(".palco") ? e.touches[0].clientX : null; }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (toqueX == null || !aberto || aberto.p.fotos.length < 2) return;
+    var dx = e.changedTouches[0].clientX - toqueX;
+    toqueX = null;
+    if (Math.abs(dx) > 40) irFoto(aberto.foto + (dx < 0 ? 1 : -1));
+  }, { passive: true });
   $("busca").addEventListener("input", function (e) { estado.busca = e.target.value; estado.limite = POR_PAGINA; render(); });
 
   var aba = new URLSearchParams(location.search).get("tab");
