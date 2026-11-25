@@ -39,6 +39,7 @@ img { display: block; max-width: 100%; }
 .barra .painel { margin: 0 0 10px; }
 .abas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; }
 .abas .btn-escuro { font-size: 19px; padding: 11px 8px; }
+.abas .curto { display: none; }
 .busca { position: relative; }
 .busca::before { content: ""; position: absolute; left: 16px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9a9a' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E"); pointer-events: none; }
 .busca input { width: 100%; padding: 13px 16px 13px 42px; border-radius: 14px; border: 1px solid var(--tile-borda); background: var(--tile); font-size: 16px; }
@@ -184,6 +185,8 @@ footer { text-align: center; color: #777; font-size: 13px; padding: 30px 16px 40
   .barra { padding-top: 8px; padding-bottom: 8px; }
   .abas { gap: 6px; padding: 6px; }
   .abas .btn-escuro { font-size: 14px; padding: 9px 2px; border-radius: 10px; letter-spacing: 0; }
+  .abas .longo { display: none; }
+  .abas .curto { display: inline; }
   /* Categorias em uma linha que rola para o lado */
   .cats { display: flex; overflow-x: auto; scrollbar-width: none; background: none; border: 0; padding: 0; margin: 4px -16px 8px; padding: 0 16px; }
   .cats::-webkit-scrollbar { display: none; }
