@@ -153,7 +153,16 @@
     "times italianos": "seriea", "times alemaes": "bundesliga", "times franceses": "ligue1", "outros times": "outros" };
   var TAM_CP = { "2GG": "2XL", "3GG": "3XL", "4GG": "4XL" };
   var emblemas = {};
-  function emblema(time) { return time && time !== "Outros" ? emblemas[slug(time)] || null : null; }
+  /* Emblemas guardados no site (imagens/emblemas/<nome>.png) para times sem emblema no CatálogoPro.
+     O emblema cadastrado no CatálogoPro tem prioridade. Para incluir um, salve o PNG e acrescente o nome aqui. */
+  var EMBLEMAS_LOCAIS = ["arabia-saudita", "blackburn-rovers", "bolivia", "borussia-m", "bremen", "cabo-verde", "ceara",
+    "cerro-porteno", "cordoba", "e-unidos", "equador", "figueirense", "frankfurt", "gana", "granada", "kyoto-sanga",
+    "mallorca", "newcastle", "nigeria", "noruega", "olimpia", "paysandu", "peru", "st-pauli", "venezia"];
+  function emblema(time) {
+    if (!time || time === "Outros") return null;
+    var s = slug(time);
+    return emblemas[s] || (EMBLEMAS_LOCAIS.indexOf(s) >= 0 ? "imagens/emblemas/" + s + ".png" : null);
+  }
   function carregarCatalogoPro() {
     var cfg = window.CATALOGOPRO || {};
     if (!cfg.app) return Promise.resolve(0);

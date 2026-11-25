@@ -67,8 +67,13 @@ img { display: block; max-width: 100%; }
 .time { background: none; border: 0; padding: 0; cursor: pointer; text-align: center; min-width: 0; }
 .time .quad { aspect-ratio: 1; background: #f2f2f2; border: 1px solid var(--tile-borda); border-radius: 16px; overflow: hidden; position: relative; transition: border-color .15s, transform .15s; }
 .time .quad img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.time .quad.emblema { background: radial-gradient(circle at 50% 40%, #ffffff, #e4e4e4); }
-.time .quad.emblema img { object-fit: contain; object-position: center; padding: 16%; filter: drop-shadow(0 2px 3px rgba(0,0,0,.18)); }
+/* Emblema: fundo escuro com brilho azul e as listras da capa */
+.time .quad.emblema { border-color: #26304a; background:
+  radial-gradient(circle at 50% 42%, rgba(67,115,225,.38) 0%, rgba(67,115,225,.10) 42%, transparent 70%),
+  repeating-linear-gradient(-55deg, #161616 0 14px, #1c1c1c 14px 16px); }
+.time .quad.emblema img { object-fit: contain; object-position: center; padding: 17%; filter: drop-shadow(0 0 1px rgba(255,255,255,.7)) drop-shadow(0 0 6px rgba(255,255,255,.12)) drop-shadow(0 6px 10px rgba(0,0,0,.6)); transition: transform .2s; }
+.time:hover .quad.emblema { border-color: var(--azul); box-shadow: 0 0 18px rgba(67,115,225,.35); }
+.time:hover .quad.emblema img { transform: scale(1.06); }
 .time .quad .n { position: absolute; right: 6px; top: 6px; background: var(--azul); color: #fff; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 7px; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
 .time:hover .quad { border-color: var(--azul); transform: translateY(-2px); }
 .time .nome { display: block; margin-top: 6px; font-size: 17px; color: #cfcfcf; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
