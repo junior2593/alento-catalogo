@@ -7,5 +7,5 @@ window.CATALOGO_API = "https://script.google.com/macros/s/AKfycbwlVKVaDPE1JIthCm
    Para desligar, troque app por "". */
 window.CATALOGOPRO = {
   app: "69386f6ce9fe29121d66f65f",
-  precos: { "Camisas": 120, "Kits": 150, "Todos": null }
+  precos: { "Camisas": 120, "Kits": 150, "Todos": 100 }
 };
