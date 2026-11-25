@@ -39,7 +39,7 @@
       ["Girona"], ["Alavés", "alaves"], ["Rayo V.", "rayo vallecano"], ["Bilbao", "athletic bilbao"],
       ["Atl. Madrid", "atletico de madrid", "atletico madrid"], ["Sevilla"], ["Valencia"], ["Osasuna"],
       ["R. Betis", "real betis", "betis"], ["C. de Vigo", "celta de vigo", "celta"], ["Cádiz", "cadiz"], ["Granada"],
-      ["La Coruña", "la coruna", "deportivo"], ["Valladolid"], ["Málaga", "malaga"], ["Las Palmas"], ["Levante"]]],
+      ["La Coruña", "la coruna", "deportivo"], ["Valladolid"], ["Málaga", "malaga"], ["Las Palmas"], ["Levante"], ["Mallorca"]]],
     ["seriea", "Serie A", [
       ["Inter", "inter de milao", "inter milao", "internazionale"], ["Milan"], ["Juventus"], ["Roma"], ["Lazio"],
       ["Napoli"], ["Genoa"], ["Fiorentina"], ["Atalanta"], ["Udinese"], ["Cagliari"], ["Parma"], ["Lecce"],
@@ -48,7 +48,7 @@
       ["Bayern", "bayern de munique"], ["Dortmund", "borussia dortmund"], ["Leverkusen", "bayer leverkusen", "bayern leverkusen"],
       ["Leipzig", "rb leipzig"], ["Frankfurt", "eintracht frankfurt"], ["Köln", "koln", "colonia"], ["Freiburg"],
       ["Wolfsburg"], ["Schalke"], ["St. Pauli", "st pauli"], ["Mainz"], ["Stuttgart"], ["Bochum"], ["Hoffenheim"],
-      ["Hertha"], ["Borussia M.", "monchengladbach", "gladbach"], ["Bremen", "werder bremen"], ["U. Berlin", "union berlin"],
+      ["Hertha"], ["Borussia M.", "monchengladbach", "gladbach", "moncheglabah"], ["Bremen", "werder bremen"], ["U. Berlin", "union berlin"],
       ["Hamburgo", "hamburg"]]],
     ["ligue1", "Ligue Un", [
       ["Paris", "psg", "paris saint germain"], ["Marseille", "olympique de marseille", "olympique marseille", "olympique de marselha", "marselha"],
@@ -60,7 +60,7 @@
       ["Los Angeles", "lafc", "los angeles fc"], ["Columbus"], ["Austin"]]],
     ["outros", "Outros Times", [
       ["Sporting"], ["Benfica"], ["Porto"], ["Braga"], ["Eindhoven", "psv"], ["Cruz Azul"], ["Ittihad", "al ittihad"],
-      ["Al Hilal"], ["Al Nassr"], ["Peñarol", "penarol"], ["Colo Colo"], ["Celtic"], ["Rangers"], ["Olimpia"], ["Ajax"],
+      ["Al Hilal"], ["Al Nassr"], ["Peñarol", "penarol", "penharol"], ["Colo Colo"], ["Celtic"], ["Rangers"], ["Olimpia"], ["Ajax"],
       ["River Plate"], ["Boca", "boca juniors"], ["U. de Chile", "universidad de chile", "universidad do chile"],
       ["Católica", "universidade catolica", "universidad catolica"], ["Galatasaray", "galataray", "galatarasay"], ["Besiktas"],
       ["Fenerbahce"], ["Tigres"], ["Pumas"], ["Racing"], ["Estudiantes"], ["San Lorenzo"], ["Atl. Nacional", "atletico nacional"], ["Shakhtar", "shakhtar donetsk"], ["Cerro Porteño", "cerro porteno"],
@@ -119,20 +119,23 @@
   }
 
   var vistos = {};
-  var produtos = (window.PRODUTOS || []).map(function (p) {
-    var id = slug(p.nome), n = 2;
-    while (vistos[id]) id = slug(p.nome) + "-" + n++;
+  /* p: nome, preco, img, cats. Camisas do CatálogoPro trazem também: idBase, timeNome, secao (reserva),
+     fotos, disp (tamanhos marcados lá, sem quantidade) e infantil. */
+  function montar(p) {
+    var base = slug(p.idBase || p.nome), id = base, n = 2;
+    while (vistos[id]) id = base + "-" + n++;
     vistos[id] = true;
     var cats = p.cats || [];
     var temCat = function (c) { return cats.indexOf(c) >= 0; };
-    var achado = acharTime(p.nome, temCat("nba"));
+    var achado = (p.timeNome && acharTime(p.timeNome, temCat("nba"))) || acharTime(p.nome, temCat("nba"));
     var retro = temCat("retro");
-    var secao = retro ? "retro" : achado ? achado.secao : null;
-    var time = achado ? achado.time : (retro ? "Outros" : null);
-    var infantil = temCat("kids");
+    var secao = retro ? "retro" : achado ? achado.secao : p.secao || null;
+    var time = achado ? achado.time : p.timeNome || (retro ? "Outros" : null);
+    var infantil = p.infantil != null ? p.infantil : temCat("kids");
+    var img = (p.img || "").replace("imagens/catalogo/", "imagens/");
     var prod = {
-      id: id, nome: p.nome, base: Number(p.preco) || 0,
-      img: (p.img || "").replace("imagens/catalogo/", "imagens/"),
+      id: id, nome: p.nome, base: p.preco == null ? null : Number(p.preco) || 0,
+      img: img, fotos: p.fotos && p.fotos.length ? p.fotos : [img], disp: p.disp || null,
       cats: cats, temCat: temCat, secao: secao, time: time,
       timeId: secao && time ? secao + ":" + slug(time) : null,
       publico: infantil ? "infantil" : "adulto",
@@ -142,7 +145,54 @@
     // Sem time e sem categoria: vai para o botão "Outros" em Outros Times
     if (!prod.secao && !prod.categorias.length) { prod.secao = "outros"; prod.time = "Outros"; prod.timeId = "outros:outros"; }
     return prod;
-  });
+  }
+  var produtos = (window.PRODUTOS || []).map(montar);
+
+  /* CatálogoPro: lê ao vivo as camisas ativas (não arquivadas) e junta às do fornecedor. */
+  var PAIS_SECAO = { "selecoes": "fifa", "times brasileiros": "brasileirao", "times ingleses": "premier", "times espanhois": "laliga",
+    "times italianos": "seriea", "times alemaes": "bundesliga", "times franceses": "ligue1", "outros times": "outros" };
+  var TAM_CP = { "2GG": "2XL", "3GG": "3XL", "4GG": "4XL" };
+  function carregarCatalogoPro() {
+    var cfg = window.CATALOGOPRO || {};
+    if (!cfg.app) return Promise.resolve(0);
+    var api = "https://base44.app/api/apps/" + cfg.app + "/entities/";
+    var ler = function (entidade, extra) {
+      return fetch(api + entidade + "?limit=5000" + (extra || ""), { headers: { "X-App-Id": cfg.app } })
+        .then(function (r) { if (!r.ok) throw new Error(entidade + " " + r.status); return r.json(); });
+    };
+    var campos = "name,team_id,photos,shopify_photo_urls,sizes,category,is_kids_kit,is_archived,shopify_archived,is_sample";
+    return Promise.all([
+      ler("Model", "&q=" + encodeURIComponent(JSON.stringify({ is_archived: false })) + "&fields=" + encodeURIComponent(campos)),
+      ler("Team"), ler("Country")
+    ]).then(function (r) {
+      var times = {}, paises = {};
+      r[2].forEach(function (c) { paises[c.id] = PAIS_SECAO[norm(c.name)] || "outros"; });
+      r[1].forEach(function (t) { times[t.id] = t; });
+      var precos = cfg.precos || {};
+      var novos = r[0].filter(function (m) {
+        return !m.is_archived && !m.shopify_archived && !m.is_sample && m.sizes && m.sizes.length;
+      }).map(function (m) {
+        var t = times[m.team_id] || {};
+        var disp = m.sizes.map(function (s) { s = String(s).trim().toUpperCase(); return TAM_CP[s] || s.replace(/^T(\d+)$/, "$1"); });
+        var infantil = !!m.is_kids_kit || disp.every(function (s) { return /^\d+$/.test(s); });
+        var nome = m.name.trim(), cats = [];
+        if (infantil) cats.push("kids");
+        if (/feminin/i.test(nome)) cats.push("feminina");
+        if (/retr[oô]/i.test(nome)) cats.push("retro");
+        if (/^(short|cal[cç][aã]o)/i.test(nome)) cats.push("shorts");
+        else if (!infantil && (m.category === "Kits" || /^conjunto/i.test(nome))) cats.push("kits");
+        var fotos = (m.photos && m.photos.length ? m.photos : m.shopify_photo_urls || []).filter(Boolean);
+        var preco = precos[m.category];
+        return montar({
+          idBase: "cp " + nome, nome: nome, preco: preco == null || preco === "" ? null : preco,
+          img: fotos[0] || "logo.jpg", fotos: fotos, cats: cats, disp: disp, infantil: infantil,
+          timeNome: t.name ? t.name.trim() : null, secao: paises[t.country_id] || "outros"
+        });
+      });
+      produtos.push.apply(produtos, novos);
+      return novos.length;
+    });
+  }
 
   var SECOES_EXIBIR = SECOES.slice(0, 9).concat([["retro", "Sessão Retrô", []]]).concat(SECOES.slice(9));
 
@@ -159,20 +209,23 @@
   function precoFinal(p, est) {
     var it = est.itens[p.id];
     if (it && it.preco != null && it.preco !== "") return Number(it.preco);
+    if (p.disp) return p.base; // CatálogoPro: preço fixo do config.js (null = "Consulte")
     return Math.round(p.base * (1 + (Number(est.margem) || 0) / 100) * 100) / 100;
   }
   function qtd(p, est, tam) {
+    if (p.disp) return p.disp.indexOf(tam) >= 0 ? 1 : 0;
     var it = est.itens[p.id];
     return it && it.tam && Number(it.tam[tam]) > 0 ? Number(it.tam[tam]) : 0;
   }
   function tamanhosEmEstoque(p, est) { return p.tamanhos.filter(function (t) { return qtd(p, est, t) > 0; }); }
-  function brl(v) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+  function brl(v) { if (v == null || isNaN(v)) return "Consulte"; return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
   window.Catalogo = {
     produtos: produtos, SECOES: SECOES_EXIBIR, CATEGORIAS_LOJA: CATEGORIAS_LOJA,
     TAM_ADULTO: TAM_ADULTO, TAM_INFANTIL: TAM_INFANTIL,
     vazio: vazio, normalizar: normalizar, lerRascunho: lerRascunho, salvarRascunho: salvarRascunho, apagarRascunho: apagarRascunho,
+    carregarCatalogoPro: carregarCatalogoPro,
     precoFinal: precoFinal, qtd: qtd, tamanhosEmEstoque: tamanhosEmEstoque, brl: brl, esc: esc, norm: norm
   };
 })();

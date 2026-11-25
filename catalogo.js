@@ -8,10 +8,13 @@
   var pedido = url ? fetch(url + (url.indexOf("?") < 0 ? "?" : "&") + "catalogo=1", { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (d) { if (d.erro) throw new Error(d.erro); return d; }) : Promise.reject(new Error("sem API"));
-  pedido.catch(function (e) {
+  var estoque = pedido.catch(function (e) {
     console.warn("Catálogo: usando estoque.js local", e);
     return window.ESTOQUE;
-  }).then(iniciar);
+  });
+  // Camisas do CatálogoPro (ao vivo). Se ele estiver fora do ar, o site abre só com as do fornecedor.
+  var pro = C.carregarCatalogoPro().catch(function (e) { console.warn("Catálogo: CatálogoPro indisponível", e); });
+  Promise.all([estoque, pro]).then(function (r) { iniciar(r[0]); });
 
 function iniciar(dados) {
   var est = C.normalizar(dados);
@@ -155,15 +158,19 @@ function iniciar(dados) {
     var p = C.produtos.find(function (x) { return x.id === id; });
     if (!p) return;
     var tams = C.tamanhosEmEstoque(p, est).map(function (t) {
-      return '<div><b>' + C.esc(t) + '</b><small>' + C.qtd(p, est, t) + ' un.</small></div>';
+      return '<div><b>' + C.esc(t) + '</b><small>' + (p.disp ? "disponível" : C.qtd(p, est, t) + " un.") + '</small></div>';
     }).join("");
+    var preco = C.precoFinal(p, est);
     var zap = "";
     if (numero) {
-      var msg = "Olá! Tenho interesse na camisa " + p.nome + " (" + C.brl(C.precoFinal(p, est)) + "). Tamanho: ";
+      var msg = "Olá! Tenho interesse na camisa " + p.nome + (preco == null ? "" : " (" + C.brl(preco) + ")") + ". Tamanho: ";
       zap = '<a class="zap it" target="_blank" rel="noopener" href="https://wa.me/' + numero + '?text=' + encodeURIComponent(msg) + '">Pedir pelo WhatsApp</a>';
     }
     $("modal-box").innerHTML = '<button class="fechar" data-fechar aria-label="Fechar">×</button>' +
-      '<div class="foto"><img src="' + C.esc(p.img) + '" alt="' + C.esc(p.nome) + '"></div>' +
+      '<div class="foto"><img id="foto-grande" src="' + C.esc(p.img) + '" alt="' + C.esc(p.nome) + '">' +
+      (p.fotos.length > 1 ? '<div class="miniaturas">' + p.fotos.map(function (f, i) {
+        return '<button data-foto="' + C.esc(f) + '" aria-label="Foto ' + (i + 1) + '"' + (i ? "" : ' aria-pressed="true"') + '><img loading="lazy" src="' + C.esc(f) + '" alt=""></button>';
+      }).join("") + '</div>' : "") + '</div>' +
       '<div class="det"><small class="it">' + C.esc(p.time || "") + '</small><h3>' + C.esc(p.nome) + '</h3>' +
       '<div class="preco">' + C.brl(C.precoFinal(p, est)) + '</div>' +
       '<div class="it" style="font-size:18px">Tamanhos disponíveis</div><div class="tams">' + tams + '</div>' + zap + '</div>';
@@ -184,6 +191,11 @@ function iniciar(dados) {
     else if (t.hasAttribute("data-voltar")) { estado.time = estado.cat = null; }
     else if (t.hasAttribute("data-mais")) { estado.limite += POR_PAGINA; render(); return; }
     else if (d.id) { abrir(d.id); return; }
+    else if (d.foto) {
+      $("foto-grande").src = d.foto;
+      t.parentNode.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b === t); });
+      return;
+    }
     else if (t.hasAttribute("data-fechar") || (t.id === "modal" && e.target === t)) { fechar(); return; }
     else return;
     render();
