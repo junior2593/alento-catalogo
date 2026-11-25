@@ -152,6 +152,8 @@
   var PAIS_SECAO = { "selecoes": "fifa", "times brasileiros": "brasileirao", "times ingleses": "premier", "times espanhois": "laliga",
     "times italianos": "seriea", "times alemaes": "bundesliga", "times franceses": "ligue1", "outros times": "outros" };
   var TAM_CP = { "2GG": "2XL", "3GG": "3XL", "4GG": "4XL" };
+  var emblemas = {};
+  function emblema(time) { return time && time !== "Outros" ? emblemas[slug(time)] || null : null; }
   function carregarCatalogoPro() {
     var cfg = window.CATALOGOPRO || {};
     if (!cfg.app) return Promise.resolve(0);
@@ -179,7 +181,13 @@
     ]).then(function (r) {
       var times = {}, paises = {};
       r[2].forEach(function (c) { paises[c.id] = PAIS_SECAO[norm(c.name)] || "outros"; });
-      r[1].forEach(function (t) { times[t.id] = t; });
+      r[1].forEach(function (t) {
+        times[t.id] = t;
+        // Emblema do clube (campo badge_url do time no CatálogoPro), pelo mesmo nome de time usado no site
+        if (!t.badge_url || !t.name) return;
+        var achado = acharTime(t.name.trim(), false), chave = slug(achado ? achado.time : t.name.trim());
+        if (!emblemas[chave]) emblemas[chave] = t.badge_url;
+      });
       var precos = cfg.precos || {};
       var novos = r[0].filter(function (m) {
         return !m.is_archived && !m.shopify_archived && !m.is_sample && m.sizes && m.sizes.length;
@@ -238,7 +246,7 @@
     produtos: produtos, SECOES: SECOES_EXIBIR, CATEGORIAS_LOJA: CATEGORIAS_LOJA,
     TAM_ADULTO: TAM_ADULTO, TAM_INFANTIL: TAM_INFANTIL,
     vazio: vazio, normalizar: normalizar, lerRascunho: lerRascunho, salvarRascunho: salvarRascunho, apagarRascunho: apagarRascunho,
-    carregarCatalogoPro: carregarCatalogoPro,
+    carregarCatalogoPro: carregarCatalogoPro, emblema: emblema,
     precoFinal: precoFinal, qtd: qtd, tamanhosEmEstoque: tamanhosEmEstoque, brl: brl, esc: esc, norm: norm
   };
 })();

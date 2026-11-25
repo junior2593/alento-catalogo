@@ -109,7 +109,8 @@ function iniciar(dados) {
       html += '<h2 class="secao-tit it" data-marca="' + (MARCA[sec[0]] || "") + '"><span>' + C.esc(sec[1]) + '</span></h2>';
       html += '<div class="painel times">' + ordem.map(function (id) {
         var t = times[id];
-        return '<button class="time" data-time="' + C.esc(id) + '"><div class="quad"><img loading="lazy" src="' + C.esc(t.img) + '" alt=""><span class="n">' + t.n + '</span></div>' +
+        var esc = C.emblema(t.nome);
+        return '<button class="time" data-time="' + C.esc(id) + '"><div class="quad' + (esc ? " emblema" : "") + '"><img loading="lazy" src="' + C.esc(esc || t.img) + '" alt=""><span class="n">' + t.n + '</span></div>' +
           '<span class="nome it">' + C.esc(t.nome) + '</span></button>';
       }).join("") + '</div>';
     });
